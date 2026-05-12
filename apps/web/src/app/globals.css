@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #61401E;
+  --color-primary-foreground: #FFFFF9;
+  --color-secondary: #e6dfd3;
+  --color-accent: #d4c7b5;
+  --color-background: #FFFFF9;
+  --color-foreground: #61401E;
+  --color-muted: #8c7661;
+  --color-border: #d4c7b5;
+  --color-card: #ffffff;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    antialiased: true;
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-primary);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-[#61401E] text-[#FFFFF9] px-6 py-3 rounded-2xl font-semibold transition-all hover:opacity-90 active:scale-95 shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-[#e6dfd3] text-[#61401E] px-6 py-3 rounded-2xl font-semibold transition-all hover:bg-[#d4c7b5] active:scale-95;
+  }
+
+  .card-premium {
+    @apply bg-white border border-[#d4c7b5]/30 rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(97,64,30,0.04)];
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[#8c7661] hover:bg-[#e6dfd3] hover:text-[#61401E];
+  }
+
+  .sidebar-item-active {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-[#61401E] text-[#FFFFF9] shadow-lg shadow-[#61401E]/10;
+  }
+}
+
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(249, 233, 255, 0) 0%, rgb(249, 233, 255) 100%);
+}
