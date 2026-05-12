@@ -1,0 +1,17 @@
+{
+  "name": "@projeto-psi/database",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "studio": "prisma studio",
+    "build": "echo No build needed"
+  },
+  "dependencies": {
+    "@prisma/client": "latest"
+  },
+  "devDependencies": {
+    "prisma": "latest"
+  }
+}
