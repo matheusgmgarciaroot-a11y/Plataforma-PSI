@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, CheckCircle, ArrowLeft, Mic, Sparkles, AlertCircle, FileText, User, Clock, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
@@ -13,8 +13,9 @@ const patients = {
   '4': { name: 'Renato', age: 31, objective: 'Autoestima' },
 };
 
-export default function SessionPage({ params }: { params: { id: string } }) {
-  const patient = patients[params.id as keyof typeof patients] || { name: 'Paciente', objective: 'Não definido' };
+export default function SessionPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const patient = patients[resolvedParams.id as keyof typeof patients] || { name: 'Paciente', objective: 'Não definido' };
   
   interface AiResult {
     identification: string;

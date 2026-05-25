@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { use } from 'react';
 import DashboardLayout from '@/components/Dashboard/Layout';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, Calendar, FileText, Download, Share2, History, ChevronRight } from 'lucide-react';
@@ -19,8 +19,9 @@ const history = [
   { id: 3, date: '27/04/2026', time: '14:30', status: 'Finalizado', summary: 'Discussão sobre a relação com a família e estabelecimento de limites saudáveis.' },
 ];
 
-export default function ProntuarioPage({ params }: { params: { id: string } }) {
-  const patient = patients[params.id as keyof typeof patients] || patients['1'];
+export default function ProntuarioPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const patient = patients[resolvedParams.id as keyof typeof patients] || patients['1'];
 
   return (
     <DashboardLayout>
