@@ -24,9 +24,14 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@projeto-psi/database": "*",
+    "@prisma/client": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "@nestjs/jwt": "^11.0.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",

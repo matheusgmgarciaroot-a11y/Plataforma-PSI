@@ -1,6 +1,7 @@
 import Hero from '@/components/Landing/Hero';
 import Features from '@/components/Landing/Features';
 import { Shield } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LandingPage() {
   return (
@@ -22,9 +23,9 @@ export default function LandingPage() {
             <a href="#Planos" className="hover:text-[#61401E] transition-colors">Planos</a>
           </div>
 
-          <a href="/dashboard" className="btn-primary py-2 px-6">
+          <Link href="/login" className="btn-primary py-2 px-6">
             Entrar
-          </a>
+          </Link>
         </nav>
       </header>
 
@@ -60,9 +61,9 @@ export default function LandingPage() {
             <p className="text-xl text-[#8c7661] mb-10">
               Sem cartão de crédito, sem burocracia. Agenda, SmartNotes e Financeiro liberados.
             </p>
-            <button className="btn-primary text-xl px-12 py-5">
+            <Link href="/contratar" className="btn-primary inline-block text-xl px-12 py-5">
               Começar agora
-            </button>
+            </Link>
             <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#8c7661]">
               <Shield size={16} />
               <span>Dados protegidos com criptografia militar</span>

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Hero() {
   return (
@@ -21,9 +22,9 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <button className="btn-primary text-lg px-8 py-4 w-full md:w-auto">
+            <Link href="/contratar" className="btn-primary text-lg px-8 py-4 w-full md:w-auto text-center inline-block">
               Experimente agora
-            </button>
+            </Link>
             <button className="btn-secondary flex items-center gap-2 text-lg px-8 py-4 w-full md:w-auto justify-center">
               <Play className="fill-current" size={20} />
               Veja em ação

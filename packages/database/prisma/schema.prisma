@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Professional {
@@ -14,6 +13,12 @@ model Professional {
   password     String
   specialty    String?
   crp          String?
+  role              String        @default("professional")
+  status            String        @default("active")
+  birthDate         DateTime?
+  gender            String?
+  phone             String?
+  consultationPrice Float?
   patients     Patient[]
   appointments Appointment[]
   transactions Transaction[]

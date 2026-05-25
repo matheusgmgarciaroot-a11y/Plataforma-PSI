@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   Users, 
   Calendar, 
@@ -10,9 +10,12 @@ import {
   Settings, 
   LogOut,
   Search,
-  Bell
+  Bell,
+  UserCheck
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -28,6 +31,33 @@ const SidebarItem = ({ icon: Icon, label, active }: SidebarItemProps) => (
 );
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, token, logout, initialize } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // Route protection
+  useEffect(() => {
+    // If we've completed initialization and no token is present, redirect to login
+    const savedToken = localStorage.getItem('mindora_token');
+    if (!savedToken) {
+      router.push('/login');
+    }
+  }, [token, router]);
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    logout();
+    router.push('/login');
+  };
+
+  const isAdmin = user?.role === 'admin';
+  const userName = user?.name || 'Carregando...';
+  const userRoleText = isAdmin ? 'Administrador Master' : 'Psicóloga Clínica';
+
   return (
     <div className="flex min-h-screen bg-[#FFFFF9]">
       {/* Sidebar */}
@@ -40,15 +70,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex-1 flex flex-col gap-2">
-          <a href="/dashboard"><SidebarItem icon={LayoutDashboard} label="Painel Clínico" active /></a>
-          <SidebarItem icon={Users} label="Pacientes" />
-          <SidebarItem icon={Mic} label="Sessões" />
-          <SidebarItem icon={Calendar} label="Prontuários" />
-          <SidebarItem icon={Calendar} label="Agenda" />
-          <SidebarItem icon={Wallet} label="Financeiro" />
+          {isAdmin ? (
+            /* Admin Master Navigation */
+            <>
+              <Link href="/dashboard/admin">
+                <SidebarItem 
+                  icon={LayoutDashboard} 
+                  label="Painel Admin" 
+                  active={pathname === '/dashboard/admin'} 
+                />
+              </Link>
+              <Link href="/dashboard/admin">
+                <SidebarItem 
+                  icon={Users} 
+                  label="Gerenciar Psicólogos" 
+                  active={pathname?.startsWith('/dashboard/admin')} 
+                />
+              </Link>
+            </>
+          ) : (
+            /* Professional Navigation */
+            <>
+              <Link href="/dashboard">
+                <SidebarItem 
+                  icon={LayoutDashboard} 
+                  label="Painel Clínico" 
+                  active={pathname === '/dashboard'} 
+                />
+              </Link>
+              <SidebarItem icon={Users} label="Pacientes" />
+              <SidebarItem icon={Mic} label="Sessões" />
+              <SidebarItem icon={Calendar} label="Prontuários" />
+              <SidebarItem icon={Calendar} label="Agenda" />
+              <SidebarItem icon={Wallet} label="Financeiro" />
+            </>
+          )}
+
           <div className="mt-auto flex flex-col gap-2 pt-8 border-t border-[#d4c7b5]/20">
             <SidebarItem icon={Settings} label="Configurações" />
-            <a href="/"><SidebarItem icon={LogOut} label="Sair" /></a>
+            <button onClick={handleLogout} className="w-full text-left focus:outline-none">
+              <SidebarItem icon={LogOut} label="Sair" />
+            </button>
           </div>
         </nav>
       </aside>
@@ -61,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8c7661]" size={18} />
             <input 
               type="text" 
-              placeholder="Pesquisar pacientes, sessões..." 
+              placeholder={isAdmin ? "Pesquisar profissionais..." : "Pesquisar pacientes, sessões..."}
               className="w-full bg-[#e6dfd3]/30 border-none rounded-2xl py-2.5 pl-12 pr-4 focus:ring-2 focus:ring-[#61401E]/20 text-[#61401E] placeholder:text-[#8c7661]/60"
             />
           </div>
@@ -74,11 +136,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="h-10 w-px bg-[#d4c7b5]/30 mx-2" />
             <div className="flex items-center gap-3 pl-2 cursor-pointer group">
               <div className="text-right">
-                <p className="text-sm font-bold text-[#61401E]">Dra. Heloisa Valentim</p>
-                <p className="text-xs text-[#8c7661]">Psicóloga Clínica</p>
+                <p className="text-sm font-bold text-[#61401E]">{userName}</p>
+                <p className="text-xs text-[#8c7661]">{userRoleText}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-[#61401E]/10 border border-[#61401E]/20 flex items-center justify-center text-[#61401E] font-bold overflow-hidden group-hover:border-[#61401E] transition-colors">
-                 H
+                {userName[0]?.toUpperCase()}
               </div>
             </div>
           </div>

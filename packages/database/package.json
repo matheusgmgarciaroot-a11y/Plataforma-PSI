@@ -1,17 +1,24 @@
 {
   "name": "@projeto-psi/database",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "studio": "prisma studio",
-    "build": "echo No build needed"
+    "build": "tsc"
   },
   "dependencies": {
-    "@prisma/client": "latest"
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "latest",
+    "bcryptjs": "^2.4.3",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
-    "prisma": "latest"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.20.0",
+    "prisma": "latest",
+    "ts-node": "^10.9.2"
   }
 }

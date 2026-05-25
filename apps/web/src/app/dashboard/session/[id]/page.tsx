@@ -16,9 +16,21 @@ const patients = {
 export default function SessionPage({ params }: { params: { id: string } }) {
   const patient = patients[params.id as keyof typeof patients] || { name: 'Paciente', objective: 'Não definido' };
   
+  interface AiResult {
+    identification: string;
+    dateTime: string;
+    professional: string;
+    objective: string;
+    evolution: string;
+    procedures: string;
+    referrals: string;
+    observations: string;
+    status: string;
+  }
+
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [aiResult, setAiResult] = useState<null | any>(null);
+  const [aiResult, setAiResult] = useState<null | AiResult>(null);
   const [step, setStep] = useState<'editor' | 'review'>('editor');
   const [isSaved, setIsSaved] = useState(false);
 
@@ -152,19 +164,19 @@ export default function SessionPage({ params }: { params: { id: string } }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-[#d4c7b5]/20 pb-8">
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-[#8c7661] mb-2 block">Identificação</label>
-                    <p className="font-medium">{aiResult.identification}</p>
+                    <p className="font-medium">{aiResult?.identification}</p>
                   </div>
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-[#8c7661] mb-2 block">Data e Horário</label>
-                    <p className="font-medium">{aiResult.dateTime}</p>
+                    <p className="font-medium">{aiResult?.dateTime}</p>
                   </div>
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-[#8c7661] mb-2 block">Responsável</label>
-                    <p className="font-medium">{aiResult.professional}</p>
+                    <p className="font-medium">{aiResult?.professional}</p>
                   </div>
                   <div>
                     <label className="text-xs font-bold uppercase tracking-wider text-[#8c7661] mb-2 block">Demanda</label>
-                    <p className="font-medium">{aiResult.objective}</p>
+                    <p className="font-medium">{aiResult?.objective}</p>
                   </div>
                 </div>
 
@@ -175,7 +187,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
                        Evolução do Caso
                     </h4>
                     <p className="text-[#61401E] leading-relaxed bg-[#FFFFF9] p-6 rounded-2xl border border-[#d4c7b5]/20">
-                      {aiResult.evolution}
+                      {aiResult?.evolution}
                     </p>
                   </section>
 
@@ -184,7 +196,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
                        <CheckCircle size={18} className="text-[#8c7661]" />
                        Procedimentos Adotados
                     </h4>
-                    <p className="text-[#61401E] leading-relaxed">{aiResult.procedures}</p>
+                    <p className="text-[#61401E] leading-relaxed">{aiResult?.procedures}</p>
                   </section>
 
                   <section>
@@ -193,7 +205,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
                        Observações Relevantes
                     </h4>
                     <textarea 
-                      defaultValue={aiResult.observations}
+                      defaultValue={aiResult?.observations}
                       className="w-full p-4 rounded-xl border border-red-100 bg-red-50/30 text-sm focus:ring-1 focus:ring-red-200 outline-none"
                     />
                   </section>
