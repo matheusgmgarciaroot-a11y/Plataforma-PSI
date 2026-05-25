@@ -17,8 +17,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.pool = exports.prisma = void 0;
+exports.pool = exports.PrismaClient = exports.prisma = void 0;
 const client_1 = require("@prisma/client");
+Object.defineProperty(exports, "PrismaClient", { enumerable: true, get: function () { return client_1.PrismaClient; } });
 const adapter_pg_1 = require("@prisma/adapter-pg");
 const pg_1 = __importDefault(require("pg"));
 require("dotenv/config");
