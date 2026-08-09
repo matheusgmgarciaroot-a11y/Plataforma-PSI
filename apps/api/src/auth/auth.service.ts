@@ -40,7 +40,7 @@ export class AuthService {
 
     if (professional.status === 'suspended') {
       throw new UnauthorizedException(
-        'Seu acesso foi suspenso pela administração.',
+        'Seu acesso foi suspenso por pendência financeira. Por favor, regularize seu pagamento para liberar as atividades.',
       );
     }
 

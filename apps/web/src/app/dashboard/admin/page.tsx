@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/Dashboard/Layout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
@@ -8,20 +8,15 @@ import axios from 'axios';
 import { 
   Users, 
   UserCheck, 
-  UserPlus, 
   Trash2, 
   Key, 
   UserMinus, 
   Loader2, 
   Check, 
   X, 
-  Plus, 
-  DollarSign, 
-  Phone, 
-  BookOpen, 
-  UserX,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
@@ -51,22 +46,10 @@ export default function AdminDashboardPage() {
   const [refetchKey, setRefetchKey] = useState(0);
 
   // Modal states
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedProf, setSelectedProf] = useState<Professional | null>(null);
 
   // Form states
-  const [addForm, setAddForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    crp: '',
-    gender: 'Masculino',
-    birthDate: '',
-    phone: '',
-    consultationPrice: '',
-  });
-
   const [credForm, setCredForm] = useState({
     name: '',
     email: '',
@@ -111,21 +94,33 @@ export default function AdminDashboardPage() {
   }, [user, router]);
 
   const handleApprove = async (prof: Professional) => {
-    // Open credentials modal to set a password for the approved user, OR set status directly
-    setSelectedProf(prof);
-    setCredForm({
-      name: prof.name,
-      email: prof.email,
-      password: '',
-      crp: prof.crp || '',
-      phone: prof.phone || '',
-      consultationPrice: prof.consultationPrice?.toString() || '',
-    });
-    setIsCredentialsModalOpen(true);
+    if (!confirm(`Tem certeza de que deseja aprovar o cadastro e liberar o acesso para ${prof.name}?`)) {
+      return;
+    }
+    try {
+      await axios.patch(
+        `${API_URL}/professionals/${prof.id}/status`,
+        { status: 'active' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Move status to active directly in UI
+      setProfessionals((prev) =>
+        prev.map((p) => (p.id === prof.id ? { ...p, status: 'active' } : p))
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao aprovar o cadastro do profissional.');
+    }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    const confirmMessage = currentStatus === 'active'
+      ? 'Deseja suspender as atividades deste profissional por pendência financeira?'
+      : 'Deseja reativar o acesso deste profissional e registrar pagamento em dia?';
+
+    if (!confirm(confirmMessage)) return;
+
     try {
       await axios.patch(
         `${API_URL}/professionals/${id}/status`,
@@ -156,52 +151,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setModalLoading(true);
-    setModalError(null);
-
-    // Validate CRP (4 to 6 digits)
-    if (addForm.crp.length < 4 || addForm.crp.length > 6) {
-      setModalError('O CRP deve conter exatamente de 4 a 6 dígitos numéricos.');
-      setModalLoading(false);
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${API_URL}/professionals/manual`,
-        addForm,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // Refresh list
-      setRefetchKey((prev) => prev + 1);
-      setIsAddModalOpen(false);
-      // Reset form
-      setAddForm({
-        name: '',
-        email: '',
-        password: '',
-        crp: '',
-        gender: 'Masculino',
-        birthDate: '',
-        phone: '',
-        consultationPrice: '',
-      });
-    } catch (err: unknown) {
-      console.error(err);
-      const errorResponse = err as { response?: { data?: { message?: string } } };
-      if (errorResponse.response?.data?.message) {
-        setModalError(errorResponse.response.data.message);
-      } else {
-        setModalError('Erro ao criar o profissional. Verifique os dados.');
-      }
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
   const handleCredSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProf) return;
@@ -216,7 +165,7 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      // 1. Update details/password
+      // Update details/password
       await axios.patch(
         `${API_URL}/professionals/${selectedProf.id}/credentials`,
         {
@@ -229,15 +178,6 @@ export default function AdminDashboardPage() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // 2. If it was pending, approve it (change status to active)
-      if (selectedProf.status === 'pending') {
-        await axios.patch(
-          `${API_URL}/professionals/${selectedProf.id}/status`,
-          { status: 'active' },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      }
 
       setRefetchKey((prev) => prev + 1);
       setIsCredentialsModalOpen(false);
@@ -256,25 +196,27 @@ export default function AdminDashboardPage() {
   };
 
   const pendingList = professionals.filter((p) => p.status === 'pending');
-  // Include both active and suspended professionals in the actives tab
+  // Include both active and suspended professionals in the actives tab (exclude admin master)
   const activeList = professionals.filter((p) => (p.status === 'active' || p.status === 'suspended') && p.role !== 'admin');
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
+        
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-bold mb-2">Painel de Administração</h1>
             <p className="text-[#8c7661]">Gerencie os psicólogos credenciados e solicitações de contratação do Mindora.</p>
           </div>
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="btn-primary py-3 px-6 flex items-center justify-center gap-2 cursor-pointer rounded-xl font-bold shadow-lg"
-          >
-            <UserPlus size={18} />
-            Cadastrar Psicólogo
-          </button>
+          
+          <div className="flex items-center gap-4 bg-white border border-[#d4c7b5]/30 rounded-2xl p-4 shadow-[0_4px_20px_rgb(97,64,30,0.02)] text-sm">
+            <CreditCard className="text-[#61401E]" size={20} />
+            <div>
+              <p className="font-bold text-[#61401E]">Assinatura Mindora</p>
+              <p className="text-[#8c7661] text-xs">Valor único de R$ 25,00/mês</p>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -332,7 +274,7 @@ export default function AdminDashboardPage() {
                         <th className="p-5">E-mail</th>
                         <th className="p-5">CRP</th>
                         <th className="p-5">Telefone</th>
-                        <th className="p-5">Valor Consulta</th>
+                        <th className="p-5">Preço Consulta</th>
                         <th className="p-5 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -353,7 +295,7 @@ export default function AdminDashboardPage() {
                               title="Aprovar e Liberar Acesso"
                             >
                               <Check size={14} />
-                              Aprovar
+                              Liberar Acesso
                             </button>
                             <button
                               onClick={() => handleDelete(prof.id, prof.name)}
@@ -384,7 +326,7 @@ export default function AdminDashboardPage() {
                         <th className="p-5">E-mail</th>
                         <th className="p-5">CRP</th>
                         <th className="p-5">Telefone</th>
-                        <th className="p-5">Status</th>
+                        <th className="p-5">Mensalidade (R$ 25)</th>
                         <th className="p-5 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -399,12 +341,37 @@ export default function AdminDashboardPage() {
                             <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                               prof.status === 'active' 
                                 ? 'bg-green-100 text-green-700' 
-                                : 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
                             }`}>
-                              {prof.status === 'active' ? 'Ativo' : 'Suspenso'}
+                              {prof.status === 'active' ? 'Pago (Em dia)' : 'Atrasado (Pendente)'}
                             </span>
                           </td>
                           <td className="p-5 text-right flex items-center justify-end gap-2.5">
+                            
+                            {/* Toggle Payment Status */}
+                            <button
+                              onClick={() => handleToggleStatus(prof.id, prof.status)}
+                              className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                                prof.status === 'active'
+                                  ? 'border-yellow-600/40 text-yellow-700 hover:bg-yellow-50'
+                                  : 'border-green-600/40 text-green-700 hover:bg-green-50'
+                              }`}
+                              title={prof.status === 'active' ? 'Suspender Acesso (Inadimplência)' : 'Confirmar Pagamento e Reativar'}
+                            >
+                              {prof.status === 'active' ? (
+                                <>
+                                  <UserMinus size={13} />
+                                  Suspender
+                                </>
+                              ) : (
+                                <>
+                                  <Check size={13} />
+                                  Liberar/Pago
+                                </>
+                              )}
+                            </button>
+
+                            {/* View / Edit Details */}
                             <button
                               onClick={() => {
                                 setSelectedProf(prof);
@@ -418,23 +385,14 @@ export default function AdminDashboardPage() {
                                 });
                                 setIsCredentialsModalOpen(true);
                               }}
-                              className="px-3 py-2 bg-[#e6dfd3] hover:bg-[#d4c7b5] text-[#61401E] rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                              title="Editar Credenciais/Dados"
+                              className="px-3 py-2 bg-[#e6dfd3] hover:bg-[#d4c7b5] text-[#61401E] rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-transparent"
+                              title="Visualizar / Editar Dados"
                             >
                               <Key size={13} />
-                              Dados/Senha
+                              Editar
                             </button>
-                            <button
-                              onClick={() => handleToggleStatus(prof.id, prof.status)}
-                              className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                                prof.status === 'active'
-                                  ? 'text-yellow-600 hover:bg-yellow-50'
-                                  : 'text-green-600 hover:bg-green-50'
-                              }`}
-                              title={prof.status === 'active' ? 'Suspender Acesso' : 'Reativar Acesso'}
-                            >
-                              {prof.status === 'active' ? <UserMinus size={16} /> : <UserCheck size={16} />}
-                            </button>
+
+                            {/* Permanent Delete */}
                             <button
                               onClick={() => handleDelete(prof.id, prof.name)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
@@ -454,170 +412,14 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* ================= MODAL: ADD PROFESSIONAL MANUAL ================= */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#61401E]/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-[#d4c7b5]/30 rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden">
-            <div className="p-6 border-b border-[#d4c7b5]/20 flex items-center justify-between bg-[#FFFFF9]">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <UserPlus className="text-[#61401E]" size={20} />
-                Cadastrar Novo Psicólogo
-              </h2>
-              <button 
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 hover:bg-[#e6dfd3]/50 rounded-lg text-[#8c7661] hover:text-[#61401E] transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {modalError && (
-              <div className="mx-6 mt-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg">
-                {modalError}
-              </div>
-            )}
-
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Nome Completo</label>
-                  <input
-                    type="text"
-                    required
-                    value={addForm.name}
-                    onChange={(e) => setAddForm((prev) => ({ ...prev, name: e.target.value }))}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">E-mail</label>
-                  <input
-                    type="email"
-                    required
-                    value={addForm.email}
-                    onChange={(e) => setAddForm((prev) => ({ ...prev, email: e.target.value }))}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Definir Senha Inicial</label>
-                  <input
-                    type="password"
-                    required
-                    value={addForm.password}
-                    onChange={(e) => setAddForm((prev) => ({ ...prev, password: e.target.value }))}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-
-                {/* CRP */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">CRP (Apenas Números)</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={addForm.crp}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setAddForm((prev) => ({ ...prev, crp: val }));
-                    }}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] font-mono"
-                  />
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Gênero</label>
-                  <select
-                    value={addForm.gender}
-                    onChange={(e) => setAddForm((prev) => ({ ...prev, gender: e.target.value }))}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  >
-                    <option value="Masculino">Masculino</option>
-                    <option value="Feminino">Feminino</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-
-                {/* Birth Date */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Data de Nascimento</label>
-                  <input
-                    type="date"
-                    required
-                    value={addForm.birthDate}
-                    onChange={(e) => setAddForm((prev) => ({ ...prev, birthDate: e.target.value }))}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Telefone</label>
-                  <input
-                    type="text"
-                    required
-                    value={addForm.phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setAddForm((prev) => ({ ...prev, phone: val }));
-                    }}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-
-                {/* Price */}
-                <div>
-                  <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Valor da Consulta (R$)</label>
-                  <input
-                    type="text"
-                    required
-                    value={addForm.consultationPrice}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-                      setAddForm((prev) => ({ ...prev, consultationPrice: val }));
-                    }}
-                    className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E]"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#d4c7b5]/20">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 border border-[#d4c7b5]/40 text-[#61401E] font-bold rounded-xl text-sm hover:bg-[#e6dfd3]/20 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={modalLoading}
-                  className="px-6 py-2.5 btn-primary text-sm flex items-center gap-2 cursor-pointer font-bold disabled:opacity-50"
-                >
-                  {modalLoading ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-                  Salvar Cadastro
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL: EDIT CREDENTIALS / APPROVAL ================= */}
+      {/* ================= MODAL: EDIT DATA / RESET PASSWORD ================= */}
       {isCredentialsModalOpen && selectedProf && (
         <div className="fixed inset-0 z-50 bg-[#61401E]/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-[#d4c7b5]/30 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+          <div className="bg-white border border-[#d4c7b5]/30 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="p-6 border-b border-[#d4c7b5]/20 flex items-center justify-between bg-[#FFFFF9]">
               <h2 className="text-xl font-bold flex items-center gap-2 text-[#61401E]">
                 <Key className="text-[#61401E]" size={20} />
-                {selectedProf.status === 'pending' ? 'Liberar Acesso & Credenciais' : 'Alterar Cadastro / Senha'}
+                Visualizar / Editar Cadastro
               </h2>
               <button 
                 onClick={() => {
@@ -637,16 +439,7 @@ export default function AdminDashboardPage() {
             )}
 
             <form onSubmit={handleCredSubmit} className="p-6 space-y-4">
-              {selectedProf.status === 'pending' && (
-                <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs space-y-1">
-                  <p className="font-bold flex items-center gap-1">
-                    <ShieldAlert size={14} />
-                    Status: Solicitação Pendente
-                  </p>
-                  <p>Defina a senha inicial e valide os dados do profissional para concluir a aprovação.</p>
-                </div>
-              )}
-
+              
               <div>
                 <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Nome Completo</label>
                 <input
@@ -654,7 +447,7 @@ export default function AdminDashboardPage() {
                   required
                   value={credForm.name}
                   onChange={(e) => setCredForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>
 
@@ -665,7 +458,7 @@ export default function AdminDashboardPage() {
                   required
                   value={credForm.email}
                   onChange={(e) => setCredForm((prev) => ({ ...prev, email: e.target.value }))}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>
 
@@ -680,7 +473,7 @@ export default function AdminDashboardPage() {
                     const val = e.target.value.replace(/[^0-9]/g, '');
                     setCredForm((prev) => ({ ...prev, crp: val }));
                   }}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none font-mono"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] font-mono bg-[#FFFFF9]/40"
                 />
               </div>
 
@@ -694,12 +487,12 @@ export default function AdminDashboardPage() {
                     const val = e.target.value.replace(/[^0-9]/g, '');
                     setCredForm((prev) => ({ ...prev, phone: val }));
                   }}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Valor da Consulta (R$)</label>
+                <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Valor Médio Consulta (R$)</label>
                 <input
                   type="text"
                   required
@@ -708,21 +501,18 @@ export default function AdminDashboardPage() {
                     const val = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
                     setCredForm((prev) => ({ ...prev, consultationPrice: val }));
                   }}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">
-                  {selectedProf.status === 'pending' ? 'Definir Senha Inicial' : 'Redefinir Senha (opcional)'}
-                </label>
+                <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Definir Nova Senha (opcional)</label>
                 <input
                   type="password"
-                  placeholder={selectedProf.status === 'pending' ? 'Senha obrigatória' : 'Deixe em branco para manter a atual'}
-                  required={selectedProf.status === 'pending'}
+                  placeholder="Deixe em branco para manter a senha atual do cliente"
                   value={credForm.password}
                   onChange={(e) => setCredForm((prev) => ({ ...prev, password: e.target.value }))}
-                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none"
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>
 
@@ -743,7 +533,7 @@ export default function AdminDashboardPage() {
                   className="px-6 py-2.5 btn-primary text-sm flex items-center gap-2 cursor-pointer font-bold disabled:opacity-50"
                 >
                   {modalLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                  {selectedProf.status === 'pending' ? 'Aprovar & Ativar' : 'Salvar Alterações'}
+                  Salvar Alterações
                 </button>
               </div>
             </form>

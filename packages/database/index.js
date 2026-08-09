@@ -23,9 +23,24 @@ Object.defineProperty(exports, "PrismaClient", { enumerable: true, get: function
 const adapter_pg_1 = require("@prisma/adapter-pg");
 const pg_1 = __importDefault(require("pg"));
 require("dotenv/config");
-const connectionString = process.env.DATABASE_URL;
+let connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is missing.');
+}
+if (connectionString.startsWith('prisma+postgres://')) {
+    try {
+        const urlObj = new URL(connectionString);
+        const apiKey = urlObj.searchParams.get('api_key');
+        if (apiKey) {
+            const decoded = JSON.parse(Buffer.from(apiKey, 'base64').toString('utf-8'));
+            if (decoded.databaseUrl) {
+                connectionString = decoded.databaseUrl;
+            }
+        }
+    }
+    catch (err) {
+        console.error('Failed to parse prisma+postgres DATABASE_URL, using original:', err);
+    }
 }
 const pool = new pg_1.default.Pool({ connectionString });
 exports.pool = pool;
