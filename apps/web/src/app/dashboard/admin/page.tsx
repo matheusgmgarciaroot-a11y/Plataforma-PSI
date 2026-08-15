@@ -33,6 +33,7 @@ interface Professional {
   birthDate: string | null;
   phone: string | null;
   consultationPrice: number | null;
+  nextPaymentDate: string | null;
   createdAt: string;
 }
 
@@ -57,6 +58,7 @@ export default function AdminDashboardPage() {
     crp: '',
     phone: '',
     consultationPrice: '',
+    nextPaymentDate: '',
   });
 
   const [modalLoading, setModalLoading] = useState(false);
@@ -174,6 +176,7 @@ export default function AdminDashboardPage() {
           crp: credForm.crp,
           phone: credForm.phone,
           consultationPrice: credForm.consultationPrice ? parseFloat(credForm.consultationPrice) : null,
+          nextPaymentDate: credForm.nextPaymentDate || undefined,
           password: credForm.password || undefined, // Send password only if filled
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -338,13 +341,20 @@ export default function AdminDashboardPage() {
                           <td className="p-5 font-mono">{prof.crp || '-'}</td>
                           <td className="p-5 text-[#8c7661]">{prof.phone || '-'}</td>
                           <td className="p-5">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                              prof.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {prof.status === 'active' ? 'Pago (Em dia)' : 'Atrasado (Pendente)'}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold w-fit ${
+                                prof.status === 'active' 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {prof.status === 'active' ? 'Ativo' : 'Pendente / Atrasado'}
+                              </span>
+                              {prof.nextPaymentDate && (
+                                <span className="text-xs text-[#8c7661]">
+                                  Vence em: {new Date(prof.nextPaymentDate).toLocaleDateString('pt-BR')}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-5 text-right flex items-center justify-end gap-2.5">
                             
@@ -382,6 +392,7 @@ export default function AdminDashboardPage() {
                                   crp: prof.crp || '',
                                   phone: prof.phone || '',
                                   consultationPrice: prof.consultationPrice?.toString() || '',
+                                  nextPaymentDate: prof.nextPaymentDate ? prof.nextPaymentDate.split('T')[0] : '',
                                 });
                                 setIsCredentialsModalOpen(true);
                               }}
@@ -501,6 +512,16 @@ export default function AdminDashboardPage() {
                     const val = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
                     setCredForm((prev) => ({ ...prev, consultationPrice: val }));
                   }}
+                  className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#61401E] mb-1.5 uppercase">Vencimento da Assinatura (Admin)</label>
+                <input
+                  type="date"
+                  value={credForm.nextPaymentDate}
+                  onChange={(e) => setCredForm((prev) => ({ ...prev, nextPaymentDate: e.target.value }))}
                   className="block w-full px-3.5 py-2.5 border border-[#d4c7b5]/40 rounded-xl text-sm focus:outline-none focus:border-[#61401E] bg-[#FFFFF9]/40"
                 />
               </div>

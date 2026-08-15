@@ -19,6 +19,7 @@ model Professional {
   gender            String?
   phone             String?
   consultationPrice Float?
+  nextPaymentDate   DateTime?     // Data de vencimento da assinatura
   patients     Patient[]
   appointments Appointment[]
   transactions Transaction[]

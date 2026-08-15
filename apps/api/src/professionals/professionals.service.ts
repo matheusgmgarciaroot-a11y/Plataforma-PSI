@@ -28,6 +28,7 @@ export class ProfessionalsService {
         birthDate: true,
         phone: true,
         consultationPrice: true,
+        nextPaymentDate: true,
         createdAt: true,
       },
       orderBy: {
@@ -51,6 +52,7 @@ export class ProfessionalsService {
         birthDate: true,
         phone: true,
         consultationPrice: true,
+        nextPaymentDate: true,
         createdAt: true,
       },
     });
@@ -114,6 +116,11 @@ export class ProfessionalsService {
     if (data.consultationPrice !== undefined) {
       updateData.consultationPrice = data.consultationPrice
         ? parseFloat(data.consultationPrice)
+        : null;
+    }
+    if (data.nextPaymentDate !== undefined) {
+      updateData.nextPaymentDate = data.nextPaymentDate
+        ? new Date(data.nextPaymentDate)
         : null;
     }
 

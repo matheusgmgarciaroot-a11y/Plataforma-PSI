@@ -16,4 +16,5 @@ export class UpdateCredentialsDto {
   crp?: string;
   phone?: string;
   consultationPrice?: string;
+  nextPaymentDate?: string;
 }
