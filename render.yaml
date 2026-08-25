@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: api-plataforma-psi
+    env: node
+    buildCommand: npm install && npm run build --workspaces
+    startCommand: npm run start:prod -w apps/api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WHATSAPP_API_URL
+        sync: false
+      - key: WHATSAPP_API_KEY
+        sync: false
